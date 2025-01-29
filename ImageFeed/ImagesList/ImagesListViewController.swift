@@ -1,6 +1,8 @@
 import UIKit
 
-class ImagesListViewController: UIViewController {
+final class ImagesListViewController: UIViewController {
+    
+    // MARK: - IBOutlets
     @IBOutlet private var tableView: UITableView!
     
     let photosName: [String] = Array(0..<20).map{ "\($0)" }
@@ -12,6 +14,7 @@ class ImagesListViewController: UIViewController {
         return formatter
     }()
     
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
