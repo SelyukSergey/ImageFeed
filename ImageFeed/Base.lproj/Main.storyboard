@@ -100,7 +100,7 @@
                         </tabBarAppearance>
                     </tabBar>
                     <connections>
-                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="viewControllers" id="Wzh-kE-g1N"/>
+                        <segue destination="G4t-6E-sns" kind="relationship" relationship="viewControllers" id="Wzh-kE-g1N"/>
                         <segue destination="d5H-eN-EA4" kind="relationship" relationship="viewControllers" id="c8J-Vd-Qgn"/>
                     </connections>
                 </tabBarController>
@@ -189,14 +189,38 @@
                             <constraint firstItem="qrp-CI-Qsk" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="l97-sO-sij"/>
                         </constraints>
                     </view>
-                    <tabBarItem key="tabBarItem" title="" image="tab_editorial_active" id="bdW-Vq-yRv" userLabel="tab_editorial_active Item"/>
+                    <navigationItem key="navigationItem" id="QXD-qB-Z9F"/>
                     <connections>
                         <outlet property="tableView" destination="qrp-CI-Qsk" id="8ge-lT-yd3"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="5.343511450381679" y="-2.1126760563380285"/>
+            <point key="canvasLocation" x="946.39999999999998" y="-2.2167487684729066"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="idL-rJ-a70">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="G4t-6E-sns" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" title="" image="tab_editorial_active" id="bdW-Vq-yRv" userLabel="tab_editorial_active Item"/>
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="Rak-RP-Jdb">
+                        <rect key="frame" x="0.0" y="50" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <color key="tintColor" name="YP White"/>
+                        <color key="barTintColor" name="YP White"/>
+                        <navigationBarAppearance key="standardAppearance">
+                            <color key="backgroundColor" name="YP Black"/>
+                        </navigationBarAppearance>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="rootViewController" id="EOC-6K-Qhx"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="pCd-tL-f74" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="4" y="-2.2167487684729066"/>
         </scene>
     </scenes>
     <resources>
