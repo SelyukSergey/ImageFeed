@@ -5,6 +5,7 @@ final class ImagesListViewController: UIViewController {
     // MARK: - IBOutlets
     @IBOutlet private var tableView: UITableView!
     
+    // MARK: - Public properties
     let showSingleImageSegueIdentifier = "ShowSingleImage"
     
     let photosName: [String] = Array(0..<20).map{ "\($0)" }
