@@ -50,3 +50,13 @@ extension ImagesListViewController: UITableViewDelegate {
         return cellHeight
     }
 }
+
+extension SingleImageViewController: UIScrollViewDelegate {
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        imageView
+    }
+    
+    func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
+        updateInsets(for: scrollView)
+    }
+}

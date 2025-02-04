@@ -8,7 +8,7 @@ final class ProfileViewController: UIViewController {
     @IBOutlet private var loginNameLabel: UILabel!
     @IBOutlet private var descriptionLabel: UILabel!
     @IBOutlet private var logoutButton: UIButton!
-
+    
     // MARK: - IBActions
     @IBAction private func didTapLogoutButton() {
     }
