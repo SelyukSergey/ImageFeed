@@ -75,3 +75,4 @@ final class SingleImageViewController: UIViewController {
                                                right: horizontalInset)
     }
 }
+
