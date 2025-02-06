@@ -61,8 +61,7 @@ final class SingleImageViewController: UIViewController {
         updateInsets(for: scrollView)
     }
     
-    // MARK: - Public Functions
-    func updateInsets(for scrollView: UIScrollView) {
+    private func updateInsets(for scrollView: UIScrollView) {
         let boundsSize = scrollView.bounds.size
         let contentSize = scrollView.contentSize
         
@@ -73,6 +72,17 @@ final class SingleImageViewController: UIViewController {
                                                left: horizontalInset,
                                                bottom: verticalInset,
                                                right: horizontalInset)
+    }
+}
+
+// MARK: - Extension
+extension SingleImageViewController: UIScrollViewDelegate {
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        imageView
+    }
+    
+    func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
+        updateInsets(for: scrollView)
     }
 }
 

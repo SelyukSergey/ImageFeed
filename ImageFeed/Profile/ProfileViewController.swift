@@ -1,6 +1,7 @@
 import UIKit
 
 final class ProfileViewController: UIViewController {
+    // MARK: - Private Properties
     private var label: UILabel?
     private var imageView: UIImageView!
     
@@ -39,6 +40,7 @@ final class ProfileViewController: UIViewController {
             nameLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8)
         ])
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .semibold)
+        nameLabel.textColor = .ypWhite
         self.label = nameLabel
     }
     
@@ -66,6 +68,7 @@ final class ProfileViewController: UIViewController {
             descriptionLabel.topAnchor.constraint(equalTo: self.label!.bottomAnchor, constant: 8)
         ])
         descriptionLabel.font = UIFont.systemFont(ofSize: 13)
+        descriptionLabel.textColor = .ypWhite
         self.label = descriptionLabel
     }
     
