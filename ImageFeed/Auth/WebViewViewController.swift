@@ -1,15 +1,15 @@
 import UIKit
-import WebKit
-
-fileprivate let UnsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
+@preconcurrency import WebKit
 
 protocol WebViewViewControllerDelegate: AnyObject {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String)
     func webViewViewControllerDidCancel(_ vc: WebViewViewController)
 }
 
-
 final class WebViewViewController: UIViewController {
+    
+    // MARK: - Private Properties
+    private static let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
     
     // MARK: - IBOutlets
     @IBOutlet private var webView: WKWebView!
@@ -23,15 +23,15 @@ final class WebViewViewController: UIViewController {
         
         webView.navigationDelegate = self
         
-        guard var urlComponents = URLComponents(string: UnsplashAuthorizeURLString) else {
-            fatalError("Не удалось создать URLComponents из строки \(UnsplashAuthorizeURLString)")
+        guard var urlComponents = URLComponents(string: WebViewViewController.unsplashAuthorizeURLString) else {
+            fatalError("Не удалось создать URLComponents из строки \(WebViewViewController.unsplashAuthorizeURLString)")
         }
         
         urlComponents.queryItems = [
-            URLQueryItem(name: "client_id", value: AccessKey),
-            URLQueryItem(name: "redirect_uri", value: RedirectURI),
+            URLQueryItem(name: "client_id", value: Constants.accessKey),
+            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: AccessScope)
+            URLQueryItem(name: "scope", value: Constants.accessScope) // Исправлено с accessKey на accessScope
         ]
         
         guard let url = urlComponents.url else {
@@ -81,6 +81,7 @@ final class WebViewViewController: UIViewController {
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
 }
+
 // MARK: - WKNavigationDelegate
 extension WebViewViewController: WKNavigationDelegate {
     func webView(
