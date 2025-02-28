@@ -12,6 +12,15 @@ struct OAuthTokenResponseBody: Decodable {
     let username: String
 }
 
+// MARK: - AuthServiceError
+enum AuthServiceError: Error {
+    case invalidRequest
+    case networkError(Error)
+    case httpError(Int)
+    case noData
+    case decodingError(Error)
+}
+
 // MARK: - OAuth2Service
 final class OAuth2Service {
     // MARK: - Singleton
@@ -19,11 +28,14 @@ final class OAuth2Service {
     
     private init() {}
     
-    // MARK: - Properties
+    // MARK: - Private Properties
+    private let urlSession = URLSession.shared
+    private var task: URLSessionTask?
+    private var lastCode: String?
     private var authToken: String?
     
     // MARK: - Request Creation
-    func makeOAuthTokenRequest(code: String) -> URLRequest? {
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard let baseURL = URL(string: "https://unsplash.com") else {
             print("Ошибка: Невозможно создать baseURL")
             return nil
@@ -49,63 +61,76 @@ final class OAuth2Service {
     
     // MARK: - Fetch OAuth Token
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
+        // проверка на дублирующие запросы
+        if task != nil {
+            if lastCode != code {
+                task?.cancel()
+            } else {
+                completion(.failure(AuthServiceError.invalidRequest))
+                return
+            }
+        } else {
+            if lastCode == code {
+                completion(.failure(AuthServiceError.invalidRequest))
+                return
+            }
+        }
+        
+        lastCode = code
+        
         guard let request = makeOAuthTokenRequest(code: code) else {
-            completion(.failure(NSError(domain: "RequestError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Невозможно создать запрос"])))
+            completion(.failure(AuthServiceError.invalidRequest))
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            // логирование сетевых ошибок
-            if let error = error {
-                print("Сетевая ошибка: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
-                return
-            }
-            
-            // логирование ошибок HTTP-статусов
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode >= 300 {
-                let statusError = NSError(
-                    domain: "HTTPError",
-                    code: httpResponse.statusCode,
-                    userInfo: [NSLocalizedDescriptionKey: "Ошибка сервера: \(httpResponse.statusCode)"]
-                )
-                print("Ошибка сервера: \(httpResponse.statusCode)")
-                DispatchQueue.main.async {
-                    completion(.failure(statusError))
-                }
-                return
-            }
-            
-            guard let data = data else {
-                let noDataError = NSError(domain: "NoData", code: -1, userInfo: [NSLocalizedDescriptionKey: "Нет данных в ответе"])
-                print("Ошибка: Нет данных в ответе")
-                DispatchQueue.main.async {
-                    completion(.failure(noDataError))
-                }
-                return
-            }
-            
-            do {
-                let decoder = JSONDecoder()
-                decoder.keyDecodingStrategy = .convertFromSnakeCase
-                let oAuthTokenResponseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                self.authToken = oAuthTokenResponseBody.accessToken
+        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
                 
-                // сохранение токена в хранилище
-                OAuth2TokenStorage.shared.token = oAuthTokenResponseBody.accessToken
+                // очистка текущей задачи
+                self.task = nil
+                self.lastCode = nil
                 
-                DispatchQueue.main.async {
+                // обработка ошибок
+                if let error = error {
+                    print("Сетевая ошибка: \(error.localizedDescription)")
+                    completion(.failure(AuthServiceError.networkError(error)))
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode >= 300 {
+                    print("Ошибка сервера: \(httpResponse.statusCode)")
+                    completion(.failure(AuthServiceError.httpError(httpResponse.statusCode)))
+                    return
+                }
+                
+                guard let data = data else {
+                    print("Ошибка: Нет данных в ответе")
+                    completion(.failure(AuthServiceError.noData))
+                    return
+                }
+                
+                // декодирование ответа
+                do {
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let oAuthTokenResponseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
+                    self.authToken = oAuthTokenResponseBody.accessToken
+                    
+                    // сохранение токена в хранилище
+                    OAuth2TokenStorage.shared.token = oAuthTokenResponseBody.accessToken
+                    
                     completion(.success(oAuthTokenResponseBody.accessToken))
-                }
-            } catch {
-                print("Ошибка декодирования: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    completion(.failure(error))
+                } catch {
+                    print("Ошибка декодирования: \(error.localizedDescription)")
+                    completion(.failure(AuthServiceError.decodingError(error)))
                 }
             }
         }
+        
+        self.task = task
         task.resume()
     }
 }
