@@ -30,12 +30,12 @@ extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         vc.dismiss(animated: true)
         
-        ProgressHUD.animate()
+        UIBlockingProgressHUD.animate()
 
         oauth2Service.fetchOAuthToken(code) { [weak self] (result: Result<String, Error>) in
             guard let self = self else { return }
 
-            ProgressHUD.dismiss()
+            UIBlockingProgressHUD.dismiss()
 
             switch result {
             case .success(let token):
