@@ -63,16 +63,17 @@ final class OAuth2Service {
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
         
-        // проверка на дублирующие запросы
         if task != nil {
             if lastCode != code {
                 task?.cancel()
             } else {
+                print("[fetchOAuthToken]: Ошибка - дублирующий запрос с кодом \(code)")
                 completion(.failure(AuthServiceError.invalidRequest))
                 return
             }
         } else {
             if lastCode == code {
+                print("[fetchOAuthToken]: Ошибка - дублирующий запрос с кодом \(code)")
                 completion(.failure(AuthServiceError.invalidRequest))
                 return
             }
@@ -81,51 +82,26 @@ final class OAuth2Service {
         lastCode = code
         
         guard let request = makeOAuthTokenRequest(code: code) else {
+            print("[fetchOAuthToken]: Ошибка - неверный запрос")
             completion(.failure(AuthServiceError.invalidRequest))
             return
         }
         
-        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 
-                // очистка текущей задачи
                 self.task = nil
                 self.lastCode = nil
                 
-                // обработка ошибок
-                if let error = error {
-                    print("Сетевая ошибка: \(error.localizedDescription)")
-                    completion(.failure(AuthServiceError.networkError(error)))
-                    return
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode >= 300 {
-                    print("Ошибка сервера: \(httpResponse.statusCode)")
-                    completion(.failure(AuthServiceError.httpError(httpResponse.statusCode)))
-                    return
-                }
-                
-                guard let data = data else {
-                    print("Ошибка: Нет данных в ответе")
-                    completion(.failure(AuthServiceError.noData))
-                    return
-                }
-                
-                // декодирование ответа
-                do {
-                    let decoder = JSONDecoder()
-                    decoder.keyDecodingStrategy = .convertFromSnakeCase
-                    let oAuthTokenResponseBody = try decoder.decode(OAuthTokenResponseBody.self, from: data)
+                switch result {
+                case .success(let oAuthTokenResponseBody):
                     self.authToken = oAuthTokenResponseBody.accessToken
-                    
-                    // сохранение токена в хранилище
                     OAuth2TokenStorage.shared.token = oAuthTokenResponseBody.accessToken
-                    
                     completion(.success(oAuthTokenResponseBody.accessToken))
-                } catch {
-                    print("Ошибка декодирования: \(error.localizedDescription)")
-                    completion(.failure(AuthServiceError.decodingError(error)))
+                case .failure(let error):
+                    print("[fetchOAuthToken]: Ошибка - \(error.localizedDescription)")
+                    completion(.failure(error))
                 }
             }
         }
