@@ -34,31 +34,6 @@ final class OAuth2Service {
     private var lastCode: String?
     private var authToken: String?
     
-    // MARK: - Request Creation
-    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
-        guard let baseURL = URL(string: "https://unsplash.com") else {
-            print("Ошибка: Невозможно создать baseURL")
-            return nil
-        }
-        
-        guard let url = URL(
-            string: "/oauth/token"
-            + "?client_id=\(Constants.accessKey)"
-            + "&&client_secret=\(Constants.secretKey)"
-            + "&&redirect_uri=\(Constants.redirectURI)"
-            + "&&code=\(code)"
-            + "&&grant_type=authorization_code",
-            relativeTo: baseURL
-        ) else {
-            print("Ошибка: Невозможно создать URL для запроса")
-            return nil
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        return request
-    }
-    
     // MARK: - Fetch OAuth Token
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
@@ -108,5 +83,30 @@ final class OAuth2Service {
         
         self.task = task
         task.resume()
+    }
+    
+    // MARK: - Private Methods
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
+        guard let baseURL = URL(string: "https://unsplash.com") else {
+            print("Ошибка: Невозможно создать baseURL")
+            return nil
+        }
+        
+        guard let url = URL(
+            string: "/oauth/token"
+            + "?client_id=\(Constants.accessKey)"
+            + "&&client_secret=\(Constants.secretKey)"
+            + "&&redirect_uri=\(Constants.redirectURI)"
+            + "&&code=\(code)"
+            + "&&grant_type=authorization_code",
+            relativeTo: baseURL
+        ) else {
+            print("Ошибка: Невозможно создать URL для запроса")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        return request
     }
 }

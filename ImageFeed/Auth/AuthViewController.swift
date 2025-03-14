@@ -103,7 +103,9 @@ extension AuthViewController: WebViewViewControllerDelegate {
             message: message,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "Ок", style: .default, handler: nil))
+        alert.addAction(UIAlertAction(title: "Ок", style: .default) { _ in
+            self.didTapLoginButton()
+        })
         self.present(alert, animated: true, completion: nil)
     }
 }
