@@ -7,13 +7,32 @@ protocol WebViewViewControllerDelegate: AnyObject {
 }
 
 final class WebViewViewController: UIViewController {
-    
     // MARK: - Private Properties
-    private static let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
+    private let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
     
-    // MARK: - IBOutlets
-    @IBOutlet private var webView: WKWebView!
-    @IBOutlet private var progressView: UIProgressView!
+    private lazy var webView: WKWebView = {
+        let webView = WKWebView()
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.navigationDelegate = self
+        webView.backgroundColor = UIColor(named: "YP White")
+        return webView
+    }()
+    
+    private lazy var progressView: UIProgressView = {
+        let progressView = UIProgressView()
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        progressView.progressTintColor = UIColor(named: "YP Black")
+        return progressView
+    }()
+    
+    private lazy var backButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(named: "nav_back_button"), for: .normal)
+        button.tintColor = UIColor(named: "YP Black")
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(didTapBackButton), for: .touchUpInside)
+        return button
+    }()
     
     weak var delegate: WebViewViewControllerDelegate?
     private var progressObservation: NSKeyValueObservation?
@@ -21,11 +40,52 @@ final class WebViewViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupUI()
+        loadAuthPage()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        progressObservation = webView.observe(\.estimatedProgress, options: .new) { [weak self] _, _ in
+            self?.updateProgress()
+        }
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        progressObservation = nil
+    }
+    
+    // MARK: - Private Methods
+    private func setupUI() {
+        view.backgroundColor = UIColor(named: "YP White")
         
-        webView.navigationDelegate = self
+        view.addSubview(webView)
+        view.addSubview(progressView)
+        view.addSubview(backButton)
         
-        guard var urlComponents = URLComponents(string: WebViewViewController.unsplashAuthorizeURLString) else {
-            fatalError("Не удалось создать URLComponents из строки \(WebViewViewController.unsplashAuthorizeURLString)")
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            webView.topAnchor.constraint(equalTo: view.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        NSLayoutConstraint.activate([
+            progressView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            progressView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40)
+        ])
+        
+        NSLayoutConstraint.activate([
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            backButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor)
+        ])
+    }
+    
+    private func loadAuthPage() {
+        guard var urlComponents = URLComponents(string: unsplashAuthorizeURLString) else {
+            fatalError("Не удалось создать URLComponents из строки \(unsplashAuthorizeURLString)")
         }
         
         urlComponents.queryItems = [
@@ -41,34 +101,15 @@ final class WebViewViewController: UIViewController {
         
         let request = URLRequest(url: url)
         webView.load(request)
-        
-        updateProgress()
     }
     
-    // MARK: - IBActions
-    @IBAction func didTapBackButton(_ sender: Any?) {
-        delegate?.webViewViewControllerDidCancel(self)
-    }
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        progressObservation = webView.observe(\.estimatedProgress, options: .new) { [weak self] _, _ in
-            self?.updateProgress()
-        }
-        
-        updateProgress()
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        progressObservation = nil
-    }
-    
-    // MARK: - Private Methods
     private func updateProgress() {
         progressView.progress = Float(webView.estimatedProgress)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+    }
+    
+    @objc private func didTapBackButton() {
+        delegate?.webViewViewControllerDidCancel(self)
     }
 }
 

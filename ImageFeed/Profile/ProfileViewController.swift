@@ -2,8 +2,11 @@ import UIKit
 import Kingfisher
 
 final class ProfileViewController: UIViewController {
+    
     // MARK: - Private Properties
-    private var label: UILabel?
+    private var nameLabel: UILabel!
+    private var loginNameLabel: UILabel!
+    private var descriptionLabel: UILabel!
     private var imageView: UIImageView!
     private let profileService = ProfileService.shared
     private var profileImageServiceObserver: NSObjectProtocol?
@@ -11,6 +14,8 @@ final class ProfileViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        view.backgroundColor = UIColor(named: "YP Black")
         
         setupAvatarImageView()
         setupNameLabel()
@@ -20,7 +25,7 @@ final class ProfileViewController: UIViewController {
         
         updateProfileDetails()
         
-        // добавляем обсервер для уведомлений об изменении аватарки
+        // обсервер для уведомлений об изменении аватарки
         profileImageServiceObserver = NotificationCenter.default
             .addObserver(
                 forName: ProfileImageService.didChangeNotification,
@@ -31,15 +36,20 @@ final class ProfileViewController: UIViewController {
                 self.updateAvatar()
             }
         
-        // обновляем аватарку при загрузке экрана
         updateAvatar()
     }
-    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+    }
     // MARK: - UI Setup
     private func setupAvatarImageView() {
         guard let avatarImage = UIImage(named: "avatar") else { return }
         imageView = UIImageView(image: avatarImage)
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.layer.cornerRadius = 35
+        imageView.clipsToBounds = true
+        imageView.contentMode = .scaleAspectFill
+        
         view.addSubview(imageView)
         NSLayoutConstraint.activate([
             imageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
@@ -50,7 +60,7 @@ final class ProfileViewController: UIViewController {
     }
     
     private func setupNameLabel() {
-        let nameLabel = UILabel()
+        nameLabel = UILabel()
         nameLabel.text = "Екатерина Новикова"
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(nameLabel)
@@ -60,35 +70,32 @@ final class ProfileViewController: UIViewController {
         ])
         nameLabel.font = UIFont.systemFont(ofSize: 23, weight: .semibold)
         nameLabel.textColor = .ypWhite
-        self.label = nameLabel
     }
     
     private func setupLoginNameLabel() {
-        let loginNameLabel = UILabel()
+        loginNameLabel = UILabel()
         loginNameLabel.text = "@ekaterina_nov"
         loginNameLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(loginNameLabel)
         NSLayoutConstraint.activate([
             loginNameLabel.leadingAnchor.constraint(equalTo: imageView.leadingAnchor),
-            loginNameLabel.topAnchor.constraint(equalTo: self.label!.bottomAnchor, constant: 8)
+            loginNameLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8)
         ])
         loginNameLabel.font = UIFont.systemFont(ofSize: 13)
         loginNameLabel.textColor = .ypGray
-        self.label = loginNameLabel
     }
     
     private func setupDescriptionLabel() {
-        let descriptionLabel = UILabel()
+        descriptionLabel = UILabel()
         descriptionLabel.text = "Hello, World!"
         descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(descriptionLabel)
         NSLayoutConstraint.activate([
             descriptionLabel.leadingAnchor.constraint(equalTo: imageView.leadingAnchor),
-            descriptionLabel.topAnchor.constraint(equalTo: self.label!.bottomAnchor, constant: 8)
+            descriptionLabel.topAnchor.constraint(equalTo: loginNameLabel.bottomAnchor, constant: 8)
         ])
         descriptionLabel.font = UIFont.systemFont(ofSize: 13)
         descriptionLabel.textColor = .ypWhite
-        self.label = descriptionLabel
     }
     
     private func setupLogoutButton() {
@@ -113,26 +120,39 @@ final class ProfileViewController: UIViewController {
     private func updateProfileDetails() {
         guard let profile = profileService.profile else { return }
         
-        if let nameLabel = view.subviews.compactMap({ $0 as? UILabel }).first(where: { $0.font.pointSize == 23 }) {
-            nameLabel.text = profile.name
-        }
-        
-        if let loginNameLabel = view.subviews.compactMap({ $0 as? UILabel }).first(where: { $0.font.pointSize == 13 && $0.textColor == .ypGray }) {
-            loginNameLabel.text = profile.loginName
-        }
-        
-        if let descriptionLabel = view.subviews.compactMap({ $0 as? UILabel }).first(where: { $0.font.pointSize == 13 && $0.textColor == .ypWhite }) {
-            descriptionLabel.text = profile.bio
-        }
+        nameLabel.text = profile.name
+        loginNameLabel.text = profile.loginName
+        descriptionLabel.text = profile.bio
     }
     
     private func updateAvatar() {
-        guard
-            let profileImageURL = ProfileImageService.shared.avatarURL,
-            let url = URL(string: profileImageURL)
-        else { return }
-        
-        // используем Kingfisher для загрузки и установки изображения
-        imageView.kf.setImage(with: url)
+        DispatchQueue.main.async {
+            guard
+                let profileImageURL = ProfileImageService.shared.avatarURL,
+                let url = URL(string: profileImageURL)
+            else {
+                print("Аватар не найден или URL невалиден")
+                return
+            }
+            
+            print("Загружаем аватар по URL: \(url)")
+            
+            // используем Kingfisher для загрузки и установки изображения
+            self.imageView.kf.setImage(
+                with: url,
+                placeholder: UIImage(named: "avatar"),
+                options: [
+                    .transition(.fade(0.2)),
+                    .processor(DownsamplingImageProcessor(size: CGSize(width: 140, height: 140)))
+                ]
+            ) { result in
+                switch result {
+                case .success(let value):
+                    print("Изображение успешно загружено: \(value.source.url?.absoluteString ?? "")")
+                case .failure(let error):
+                    print("Ошибка загрузки изображения: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }

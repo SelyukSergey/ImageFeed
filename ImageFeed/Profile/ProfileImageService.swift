@@ -1,10 +1,12 @@
 import Foundation
 
 struct UserResult: Codable {
-    let profileImage: ProfileImage
+    let profileImage: ProfileImage?
     
     struct ProfileImage: Codable {
         let small: String
+        let medium: String
+        let large: String
     }
     
     enum CodingKeys: String, CodingKey {
@@ -27,19 +29,20 @@ final class ProfileImageService {
     private init() {}
     
     // MARK: - Methods
-    func fetchProfileImageURL(username: String, _ completion: @escaping (Result<String, Error>) -> Void) {
+    func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
         if task != nil {
             task?.cancel()
         }
         
         guard let token = tokenStorage.token else {
-            print("[fetchProfileImageURL]: Ошибка - отсутствует токен")
+            print("Ошибка: отсутствует токен")
             completion(.failure(AuthServiceError.invalidRequest))
             return
         }
         
-        guard let url = URL(string: "https://api.unsplash.com/users/\(username)") else {
-            print("[fetchProfileImageURL]: Ошибка - неверный URL")
+        guard let encodedUsername = username.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://api.unsplash.com/users/\(encodedUsername)") else {
+            print("Ошибка: неверный URL")
             completion(.failure(AuthServiceError.invalidRequest))
             return
         }
@@ -48,28 +51,46 @@ final class ProfileImageService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.httpMethod = "GET"
         
-        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<UserResult, Error>) in
+        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
             
-            switch result {
-            case .success(let userResult):
-                self.avatarURL = userResult.profileImage.small
+            if let error = error {
+                print("Ошибка сети: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                print("Ошибка: данные отсутствуют")
+                completion(.failure(AuthServiceError.invalidRequest))
+                return
+            }
+            
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Ответ сервера: \(jsonString)")
+            }
+            
+            do {
+                let userResult = try JSONDecoder().decode(UserResult.self, from: data)
                 
-                DispatchQueue.main.async {
-                    completion(.success(userResult.profileImage.small))
-                    
-                    NotificationCenter.default
-                        .post(
-                            name: ProfileImageService.didChangeNotification,
-                            object: self,
-                            userInfo: ["URL": userResult.profileImage.small]
-                        )
+                guard let profileImage = userResult.profileImage else {
+                    print("Поле profile_image отсутствует или равно null")
+                    completion(.failure(AuthServiceError.invalidRequest))
+                    return
                 }
-            case .failure(let error):
-                print("[fetchProfileImageURL]: Ошибка - \(error.localizedDescription)")
+                
+                self.avatarURL = profileImage.large
                 DispatchQueue.main.async {
-                    completion(.failure(error))
+                    completion(.success(profileImage.large))
+                    NotificationCenter.default.post(
+                        name: ProfileImageService.didChangeNotification,
+                        object: self,
+                        userInfo: ["URL": profileImage.large]
+                    )
                 }
+            } catch {
+                print("Ошибка декодирования: \(error.localizedDescription)")
+                completion(.failure(error))
             }
         }
         
