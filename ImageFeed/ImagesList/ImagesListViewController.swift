@@ -32,7 +32,7 @@ final class ImagesListViewController: UIViewController {
         view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -70,13 +70,13 @@ extension ImagesListViewController: UITableViewDataSource {
 extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let singleImageVC = SingleImageViewController()
+        singleImageVC.hidesBottomBarWhenPushed = true 
         
         if let image = UIImage(named: photosName[indexPath.row]) {
             singleImageVC.image = image
         }
         
-        singleImageVC.modalPresentationStyle = .fullScreen
-        present(singleImageVC, animated: true, completion: nil)
+        navigationController?.pushViewController(singleImageVC, animated: true)
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {

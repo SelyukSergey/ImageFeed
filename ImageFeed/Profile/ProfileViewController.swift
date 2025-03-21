@@ -137,7 +137,6 @@ final class ProfileViewController: UIViewController {
             
             print("Загружаем аватар по URL: \(url)")
             
-            // используем Kingfisher для загрузки и установки изображения
             self.imageView.kf.setImage(
                 with: url,
                 placeholder: UIImage(named: "avatar"),
@@ -148,9 +147,9 @@ final class ProfileViewController: UIViewController {
             ) { result in
                 switch result {
                 case .success(let value):
-                    print("Изображение успешно загружено: \(value.source.url?.absoluteString ?? "")")
+                    print("Аватар успешно загружен: \(value.source.url?.absoluteString ?? "")")
                 case .failure(let error):
-                    print("Ошибка загрузки изображения: \(error.localizedDescription)")
+                    print("Ошибка загрузки аватара: \(error.localizedDescription)")
                 }
             }
         }

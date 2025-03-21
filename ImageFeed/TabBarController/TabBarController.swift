@@ -5,7 +5,8 @@ final class TabBarController: UITabBarController {
         super.viewDidLoad()
         
         let imagesListViewController = ImagesListViewController()
-        imagesListViewController.tabBarItem = UITabBarItem(
+        let imagesListNavigationController = UINavigationController(rootViewController: imagesListViewController)
+        imagesListNavigationController.tabBarItem = UITabBarItem(
             title: "",
             image: UIImage(named: "tab_editorial_active"),
             selectedImage: nil
@@ -18,7 +19,7 @@ final class TabBarController: UITabBarController {
             selectedImage: nil
         )
         
-        self.viewControllers = [imagesListViewController, profileViewController]
+        self.viewControllers = [imagesListNavigationController, profileViewController]
         
         setupTabBarAppearance()
     }

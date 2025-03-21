@@ -17,6 +17,7 @@ struct UserResult: Codable {
 final class ProfileImageService {
     // MARK: - Singleton
     static let shared = ProfileImageService()
+    private var isFetching = false
     
     // MARK: - Properties
     static let didChangeNotification = Notification.Name(rawValue: "ProfileImageProviderDidChange")
@@ -30,13 +31,17 @@ final class ProfileImageService {
     
     // MARK: - Methods
     func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
-        if task != nil {
-            task?.cancel()
+        guard !isFetching else {
+            print("Запрос уже выполняется")
+            return
         }
+        
+        isFetching = true
         
         guard let token = tokenStorage.token else {
             print("Ошибка: отсутствует токен")
             completion(.failure(AuthServiceError.invalidRequest))
+            isFetching = false
             return
         }
         
@@ -44,6 +49,7 @@ final class ProfileImageService {
               let url = URL(string: "https://api.unsplash.com/users/\(encodedUsername)") else {
             print("Ошибка: неверный URL")
             completion(.failure(AuthServiceError.invalidRequest))
+            isFetching = false
             return
         }
         
@@ -53,6 +59,8 @@ final class ProfileImageService {
         
         let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
+            
+            defer { self.isFetching = false }
             
             if let error = error {
                 print("Ошибка сети: \(error.localizedDescription)")

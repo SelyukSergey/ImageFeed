@@ -34,27 +34,29 @@ final class OAuth2Service {
     private var lastCode: String?
     private var authToken: String?
     
+    private var isFetching = false
+    
     // MARK: - Fetch OAuth Token
     func fetchOAuthToken(_ code: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
         
-        if task != nil {
-            if lastCode != code {
-                task?.cancel()
-            } else {
-                print("[fetchOAuthToken]: Ошибка - дублирующий запрос с кодом \(code)")
-                completion(.failure(AuthServiceError.invalidRequest))
-                return
-            }
-        } else {
+        if isFetching {
+            print("[fetchOAuthToken]: Ошибка - запрос уже выполняется")
+            completion(.failure(AuthServiceError.invalidRequest))
+            return
+        }
+        
+        if let currentTask = task {
             if lastCode == code {
                 print("[fetchOAuthToken]: Ошибка - дублирующий запрос с кодом \(code)")
                 completion(.failure(AuthServiceError.invalidRequest))
                 return
             }
+            currentTask.cancel()
         }
         
         lastCode = code
+        isFetching = true
         
         guard let request = makeOAuthTokenRequest(code: code) else {
             print("[fetchOAuthToken]: Ошибка - неверный запрос")
@@ -66,8 +68,11 @@ final class OAuth2Service {
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 
-                self.task = nil
-                self.lastCode = nil
+                defer {
+                    self.isFetching = false
+                    self.task = nil
+                    self.lastCode = nil
+                }
                 
                 switch result {
                 case .success(let oAuthTokenResponseBody):

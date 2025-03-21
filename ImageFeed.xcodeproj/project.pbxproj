@@ -7,11 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B066635B2D81946100F2A42B /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = B066635A2D81946100F2A42B /* SwiftKeychainWrapper */; };
-		B0CCCF8F2D7F2275008948A1 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = B0CCCF8E2D7F2275008948A1 /* Kingfisher */; };
-		B0CCCF912D7F2292008948A1 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = B0CCCF902D7F2292008948A1 /* Kingfisher */; };
-		B0CCCF932D7F229C008948A1 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = B0CCCF922D7F229C008948A1 /* Kingfisher */; };
-		B0F98C7E2D71E03B007E8D65 /* ProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = B0F98C7D2D71E03B007E8D65 /* ProgressHUD */; };
+		B0F225BA2D85971E0097C69A /* ProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = B0F225B92D85971E0097C69A /* ProgressHUD */; };
+		B0F225BD2D85972C0097C69A /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = B0F225BC2D85972C0097C69A /* SwiftKeychainWrapper */; };
+		B0F225C02D85973A0097C69A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = B0F225BF2D85973A0097C69A /* Kingfisher */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,9 +71,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B0CCCF8F2D7F2275008948A1 /* Kingfisher in Frameworks */,
-				B0F98C7E2D71E03B007E8D65 /* ProgressHUD in Frameworks */,
-				B066635B2D81946100F2A42B /* SwiftKeychainWrapper in Frameworks */,
+				B0F225C02D85973A0097C69A /* Kingfisher in Frameworks */,
+				B0F225BD2D85972C0097C69A /* SwiftKeychainWrapper in Frameworks */,
+				B0F225BA2D85971E0097C69A /* ProgressHUD in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,7 +81,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B0CCCF912D7F2292008948A1 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +88,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B0CCCF932D7F229C008948A1 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,9 +134,9 @@
 			);
 			name = ImageFeed;
 			packageProductDependencies = (
-				B0F98C7D2D71E03B007E8D65 /* ProgressHUD */,
-				B0CCCF8E2D7F2275008948A1 /* Kingfisher */,
-				B066635A2D81946100F2A42B /* SwiftKeychainWrapper */,
+				B0F225B92D85971E0097C69A /* ProgressHUD */,
+				B0F225BC2D85972C0097C69A /* SwiftKeychainWrapper */,
+				B0F225BF2D85973A0097C69A /* Kingfisher */,
 			);
 			productName = ImageFeed;
 			productReference = B0CE89122D4516FE00512A26 /* ImageFeed.app */;
@@ -164,7 +160,6 @@
 			);
 			name = ImageFeedTests;
 			packageProductDependencies = (
-				B0CCCF902D7F2292008948A1 /* Kingfisher */,
 			);
 			productName = ImageFeedTests;
 			productReference = B0CE892B2D45170100512A26 /* ImageFeedTests.xctest */;
@@ -188,7 +183,6 @@
 			);
 			name = ImageFeedUITests;
 			packageProductDependencies = (
-				B0CCCF922D7F229C008948A1 /* Kingfisher */,
 			);
 			productName = ImageFeedUITests;
 			productReference = B0CE89352D45170100512A26 /* ImageFeedUITests.xctest */;
@@ -227,9 +221,9 @@
 			mainGroup = B0CE89092D4516FE00512A26;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				B0F98C7C2D709981007E8D65 /* XCRemoteSwiftPackageReference "ProgressHUD" */,
-				B005A5B72D7F20E100C8F593 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				B06663592D81946100F2A42B /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				B0F225B82D85971E0097C69A /* XCRemoteSwiftPackageReference "ProgressHUD" */,
+				B0F225BB2D85972C0097C69A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				B0F225BE2D85973A0097C69A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B0CE89132D4516FE00512A26 /* Products */;
@@ -318,6 +312,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -348,6 +343,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -600,23 +596,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		B005A5B72D7F20E100C8F593 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 8.3.0;
-			};
-		};
-		B06663592D81946100F2A42B /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.1;
-			};
-		};
-		B0F98C7C2D709981007E8D65 /* XCRemoteSwiftPackageReference "ProgressHUD" */ = {
+		B0F225B82D85971E0097C69A /* XCRemoteSwiftPackageReference "ProgressHUD" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/relatedcode/ProgressHUD";
 			requirement = {
@@ -624,33 +604,39 @@
 				minimumVersion = 14.1.3;
 			};
 		};
+		B0F225BB2D85972C0097C69A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.1;
+			};
+		};
+		B0F225BE2D85973A0097C69A /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.3.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B066635A2D81946100F2A42B /* SwiftKeychainWrapper */ = {
+		B0F225B92D85971E0097C69A /* ProgressHUD */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B06663592D81946100F2A42B /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			package = B0F225B82D85971E0097C69A /* XCRemoteSwiftPackageReference "ProgressHUD" */;
+			productName = ProgressHUD;
+		};
+		B0F225BC2D85972C0097C69A /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B0F225BB2D85972C0097C69A /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
 			productName = SwiftKeychainWrapper;
 		};
-		B0CCCF8E2D7F2275008948A1 /* Kingfisher */ = {
+		B0F225BF2D85973A0097C69A /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = B005A5B72D7F20E100C8F593 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			package = B0F225BE2D85973A0097C69A /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
-		};
-		B0CCCF902D7F2292008948A1 /* Kingfisher */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B005A5B72D7F20E100C8F593 /* XCRemoteSwiftPackageReference "Kingfisher" */;
-			productName = Kingfisher;
-		};
-		B0CCCF922D7F229C008948A1 /* Kingfisher */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B005A5B72D7F20E100C8F593 /* XCRemoteSwiftPackageReference "Kingfisher" */;
-			productName = Kingfisher;
-		};
-		B0F98C7D2D71E03B007E8D65 /* ProgressHUD */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B0F98C7C2D709981007E8D65 /* XCRemoteSwiftPackageReference "ProgressHUD" */;
-			productName = ProgressHUD;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

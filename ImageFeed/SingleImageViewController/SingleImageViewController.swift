@@ -13,7 +13,6 @@ final class SingleImageViewController: UIViewController {
     // MARK: - UI Elements
     private var scrollView: UIScrollView!
     private var imageView: UIImageView!
-    private var backButton: UIButton!
     private var shareButton: UIButton!
     
     // MARK: - Lifecycle
@@ -23,6 +22,17 @@ final class SingleImageViewController: UIViewController {
         if let image = image {
             updateImage(image)
         }
+        
+        let backButtonImage = UIImage(named: "nav_back_button_white")?.withRenderingMode(.alwaysOriginal)
+        let backButton = UIBarButtonItem(
+            image: backButtonImage,
+            style: .plain,
+            target: self,
+            action: #selector(didTapBackButton)
+        )
+        navigationItem.leftBarButtonItem = backButton
+        
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
     }
     
     // MARK: - Private Methods
@@ -44,42 +54,28 @@ final class SingleImageViewController: UIViewController {
         imageView.clipsToBounds = true
         scrollView.addSubview(imageView)
         
-        backButton = UIButton(type: .system)
-        backButton.translatesAutoresizingMaskIntoConstraints = false
-        backButton.setImage(UIImage(named: "nav_back_button_white"), for: .normal)
-        backButton.tintColor = .white
-        backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
-        view.addSubview(backButton)
-        
         shareButton = UIButton(type: .system)
         shareButton.translatesAutoresizingMaskIntoConstraints = false
-
+        
         if let shareImage = UIImage(named: "share_button")?.withRenderingMode(.alwaysOriginal) {
             shareButton.setImage(shareImage, for: .normal)
         } else {
             print("Изображение 'share_button' не найдено")
         }
-
+        
         shareButton.addTarget(self, action: #selector(didTapShareButton), for: .touchUpInside)
         view.addSubview(shareButton)
-
+        
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             
-            imageView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            imageView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
-            imageView.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
-            
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 13),
-            backButton.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            backButton.widthAnchor.constraint(equalToConstant: 44),
-            backButton.heightAnchor.constraint(equalToConstant: 44),
+            imageView.topAnchor.constraint(equalTo: view.topAnchor),
+            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             
             shareButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -17),
             shareButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -127,8 +123,8 @@ final class SingleImageViewController: UIViewController {
     }
     
     // MARK: - Actions
-    @objc private func backButtonTapped() {
-        dismiss(animated: true, completion: nil)
+    @objc private func didTapBackButton() {
+        navigationController?.popViewController(animated: true)
     }
     
     @objc private func didTapShareButton() {
@@ -149,5 +145,13 @@ extension SingleImageViewController: UIScrollViewDelegate {
     
     func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
         updateInsets(for: scrollView)
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+extension SingleImageViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        
+        return navigationController?.viewControllers.count ?? 0 > 1
     }
 }
