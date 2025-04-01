@@ -1,41 +1,42 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
-    
-    // MARK: - Public Properties
-    var image: UIImage? {
-        didSet {
-            guard isViewLoaded, let image else { return }
-            updateImage(image)
-        }
-    }
-    
-    // MARK: - UI Elements
     private var scrollView: UIScrollView!
     private var imageView: UIImageView!
     private var shareButton: UIButton!
     
-    // MARK: - Lifecycle
+    private let loaderContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = .ypLightGray
+        view.layer.cornerRadius = 8
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+        return view
+    }()
+    
+    var image: UIImage? {
+        didSet {
+            guard isViewLoaded else { return }
+            updateImage(image)
+            updateShareButton()
+        }
+    }
+    
+    var imageUrl: String? {
+        didSet {
+            guard isViewLoaded else { return }
+            loadImageFromUrl()
+        }
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
-        if let image = image {
-            updateImage(image)
-        }
-        
-        let backButtonImage = UIImage(named: "nav_back_button_white")?.withRenderingMode(.alwaysOriginal)
-        let backButton = UIBarButtonItem(
-            image: backButtonImage,
-            style: .plain,
-            target: self,
-            action: #selector(didTapBackButton)
-        )
-        navigationItem.leftBarButtonItem = backButton
-        
-        navigationController?.interactivePopGestureRecognizer?.delegate = self
+        loadInitialContent()
+        setupNavigationBar()
     }
     
-    // MARK: - Private Methods
     private func setupViews() {
         view.backgroundColor = .ypBlack
         
@@ -44,8 +45,6 @@ final class SingleImageViewController: UIViewController {
         scrollView.delegate = self
         scrollView.minimumZoomScale = 1.0
         scrollView.maximumZoomScale = 3.0
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.showsHorizontalScrollIndicator = false
         view.addSubview(scrollView)
         
         imageView = UIImageView()
@@ -56,26 +55,30 @@ final class SingleImageViewController: UIViewController {
         
         shareButton = UIButton(type: .system)
         shareButton.translatesAutoresizingMaskIntoConstraints = false
-        
-        if let shareImage = UIImage(named: "share_button")?.withRenderingMode(.alwaysOriginal) {
-            shareButton.setImage(shareImage, for: .normal)
-        } else {
-            print("Изображение 'share_button' не найдено")
-        }
-        
+        shareButton.setImage(UIImage(named: "share_button")?.withRenderingMode(.alwaysOriginal), for: .normal)
         shareButton.addTarget(self, action: #selector(didTapShareButton), for: .touchUpInside)
+        shareButton.isHidden = true
         view.addSubview(shareButton)
+        
+        view.addSubview(loaderContainer)
         
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            imageView.topAnchor.constraint(equalTo: view.topAnchor),
-            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            imageView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            imageView.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
+            
+            loaderContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loaderContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            loaderContainer.widthAnchor.constraint(equalToConstant: 51),
+            loaderContainer.heightAnchor.constraint(equalToConstant: 51),
             
             shareButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -17),
             shareButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -84,9 +87,80 @@ final class SingleImageViewController: UIViewController {
         ])
     }
     
-    private func updateImage(_ image: UIImage) {
+    private func loadInitialContent() {
+        if let image = image {
+            updateImage(image)
+        } else if imageUrl != nil {
+            loadImageFromUrl()
+        }
+    }
+    
+    private func setupNavigationBar() {
+        let backButton = UIBarButtonItem(
+            image: UIImage(named: "nav_back_button_white")?.withRenderingMode(.alwaysOriginal),
+            style: .plain,
+            target: self,
+            action: #selector(didTapBackButton)
+        )
+        navigationItem.leftBarButtonItem = backButton
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
+    }
+    
+    private func loadImageFromUrl() {
+        guard let imageUrlString = imageUrl, let url = URL(string: imageUrlString) else {
+            return
+        }
+        
+        showLoader()
+        
+        imageView.kf.setImage(
+            with: url,
+            options: [.transition(.fade(0.2))],
+            completionHandler: { [weak self] result in
+                guard let self = self else { return }
+                self.hideLoader()
+                
+                switch result {
+                case .success(let imageResult):
+                    self.image = imageResult.image
+                    self.rescaleAndCenterImageInScrollView(image: imageResult.image)
+                case .failure(let error):
+                    print("Image loading error: \(error.localizedDescription)")
+                }
+                self.updateShareButton()
+            }
+        )
+    }
+    
+    private func showLoader() {
+        loaderContainer.isHidden = false
+        let activityIndicator = UIActivityIndicatorView(style: .medium)
+        activityIndicator.color = .ypBlack
+        activityIndicator.startAnimating()
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        loaderContainer.addSubview(activityIndicator)
+        
+        NSLayoutConstraint.activate([
+            activityIndicator.centerXAnchor.constraint(equalTo: loaderContainer.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: loaderContainer.centerYAnchor)
+        ])
+    }
+    
+    private func hideLoader() {
+        loaderContainer.isHidden = true
+        loaderContainer.subviews.forEach { $0.removeFromSuperview() }
+    }
+    
+    private func updateImage(_ image: UIImage?) {
         imageView.image = image
-        rescaleAndCenterImageInScrollView(image: image)
+        if let image = image {
+            rescaleAndCenterImageInScrollView(image: image)
+        }
+        updateShareButton()
+    }
+    
+    private func updateShareButton() {
+        shareButton.isHidden = image == nil
     }
     
     private func rescaleAndCenterImageInScrollView(image: UIImage) {
@@ -94,7 +168,7 @@ final class SingleImageViewController: UIViewController {
         let imageSize = image.size
         
         guard imageSize.width > 0, imageSize.height > 0 else {
-            print("Ошибка: ширина или высота изображения равна нулю")
+            print("Invalid image dimensions")
             return
         }
         
@@ -122,7 +196,6 @@ final class SingleImageViewController: UIViewController {
         )
     }
     
-    // MARK: - Actions
     @objc private func didTapBackButton() {
         navigationController?.popViewController(animated: true)
     }
@@ -133,11 +206,10 @@ final class SingleImageViewController: UIViewController {
             activityItems: [image],
             applicationActivities: nil
         )
-        present(share, animated: true, completion: nil)
+        present(share, animated: true)
     }
 }
 
-// MARK: - UIScrollViewDelegate
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return imageView
@@ -148,10 +220,8 @@ extension SingleImageViewController: UIScrollViewDelegate {
     }
 }
 
-// MARK: - UIGestureRecognizerDelegate
 extension SingleImageViewController: UIGestureRecognizerDelegate {
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        
         return navigationController?.viewControllers.count ?? 0 > 1
     }
 }
