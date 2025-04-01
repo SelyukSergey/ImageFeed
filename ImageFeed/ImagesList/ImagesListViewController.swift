@@ -125,6 +125,7 @@ extension ImagesListViewController: UITableViewDataSource {
         
         let photo = photos[indexPath.row]
         cell.configure(with: photo, using: dateFormatter)
+        cell.delegate = self
         return cell
     }
 }
@@ -158,5 +159,38 @@ extension ImagesListViewController: UITableViewDelegate {
         if indexPath.row == photos.count - 1 {
             imagesListService.fetchPhotosNextPage()
         }
+    }
+}
+
+extension ImagesListViewController: ImagesListCellDelegate {
+    func imageListCellDidTapLike(_ cell: ImagesListCell) {
+        guard let indexPath = tableView.indexPath(for: cell) else { return }
+        let photo = photos[indexPath.row]
+        
+        UIBlockingProgressHUD.animate()
+        imagesListService.changeLike(photoId: photo.id, isLike: !photo.isLiked) { [weak self] result in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.photos = self.imagesListService.photos
+                    cell.setIsLiked(self.photos[indexPath.row].isLiked)
+                case .failure(let error):
+                    self.showLikeErrorAlert(error)
+                }
+                UIBlockingProgressHUD.dismiss()
+            }
+        }
+    }
+    
+    private func showLikeErrorAlert(_ error: Error) {
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: "Не удалось поставить лайк: \(error.localizedDescription)",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

@@ -1,8 +1,13 @@
 import UIKit
 import Kingfisher
 
+protocol ImagesListCellDelegate: AnyObject {
+    func imageListCellDidTapLike(_ cell: ImagesListCell)
+}
+
 final class ImagesListCell: UITableViewCell {
     static let reuseIdentifier = "ImagesListCell"
+    weak var delegate: ImagesListCellDelegate?
     
     let cellImage: UIImageView = {
         let imageView = UIImageView()
@@ -68,11 +73,13 @@ final class ImagesListCell: UITableViewCell {
     
     func configure(with photo: Photo, using dateFormatter: DateFormatter) {
         dateLabel.text = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
-        
-        let likeImage = photo.isLiked ? UIImage(named: "like_button_on") : UIImage(named: "like_button_off")
-        likeButton.setImage(likeImage, for: .normal)
-        
+        setIsLiked(photo.isLiked)
         loadImage(from: photo.thumbImageURL)
+    }
+    
+    func setIsLiked(_ isLiked: Bool) {
+        let likeImage = isLiked ? UIImage(named: "like_button_on") : UIImage(named: "like_button_off")
+        likeButton.setImage(likeImage, for: .normal)
     }
     
     private func loadImage(from urlString: String) {
@@ -146,6 +153,8 @@ final class ImagesListCell: UITableViewCell {
         contentView.addSubview(dateLabel)
         contentView.addSubview(loaderContainer)
         
+        likeButton.addTarget(self, action: #selector(likeButtonClicked), for: .touchUpInside)
+        
         NSLayoutConstraint.activate([
             cellImage.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
             cellImage.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -174,6 +183,8 @@ final class ImagesListCell: UITableViewCell {
         
         selectionStyle = .none
     }
+    
+    @objc private func likeButtonClicked() {
+        delegate?.imageListCellDidTapLike(self)
+    }
 }
-
-
