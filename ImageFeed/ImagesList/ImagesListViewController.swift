@@ -7,14 +7,8 @@ final class ImagesListViewController: UIViewController {
         tableView.backgroundColor = .ypBlack
         tableView.separatorStyle = .none
         tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
         return tableView
-    }()
-    
-    private let loadingIndicator: UIActivityIndicatorView = {
-        let indicator = UIActivityIndicatorView(style: .large)
-        indicator.color = .ypWhite
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        return indicator
     }()
     
     private var photos: [Photo] = []
@@ -23,11 +17,11 @@ final class ImagesListViewController: UIViewController {
     
     private lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateStyle = .long
+        formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter
     }()
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
@@ -42,23 +36,19 @@ final class ImagesListViewController: UIViewController {
     }
     
     private func setupViews() {
+        view.backgroundColor = .ypBlack
         view.addSubview(tableView)
-        view.addSubview(loadingIndicator)
         
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
         tableView.register(ImagesListCell.self, forCellReuseIdentifier: ImagesListCell.reuseIdentifier)
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
     }
     
     private func setupNotificationObserver() {
@@ -71,14 +61,14 @@ final class ImagesListViewController: UIViewController {
     }
     
     private func loadInitialPhotos() {
-        loadingIndicator.startAnimating()
+        UIBlockingProgressHUD.animate()
         
         if imagesListService.photos.isEmpty {
             imagesListService.fetchPhotosNextPage()
         } else {
             photos = imagesListService.photos
             tableView.reloadData()
-            loadingIndicator.stopAnimating()
+            UIBlockingProgressHUD.dismiss()
         }
     }
     
@@ -94,15 +84,23 @@ final class ImagesListViewController: UIViewController {
             }
         }
         
-        if loadingIndicator.isAnimating {
-            loadingIndicator.stopAnimating()
-        }
+        UIBlockingProgressHUD.dismiss()
     }
     
     private func showURLErrorAlert() {
         let alert = UIAlertController(
             title: "Ошибка",
             message: "Некорректная ссылка на изображение",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    private func showLikeErrorAlert(_ error: Error) {
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: "Не удалось поставить лайк: \(error.localizedDescription)",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
@@ -141,8 +139,8 @@ extension ImagesListViewController: UITableViewDelegate {
         }
         
         let singleImageVC = SingleImageViewController()
-        singleImageVC.hidesBottomBarWhenPushed = true
         singleImageVC.imageUrl = photo.largeImageURL
+        singleImageVC.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(singleImageVC, animated: true)
     }
     
@@ -167,30 +165,20 @@ extension ImagesListViewController: ImagesListCellDelegate {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let photo = photos[indexPath.row]
         
-        UIBlockingProgressHUD.animate()
         imagesListService.changeLike(photoId: photo.id, isLike: !photo.isLiked) { [weak self] result in
-            guard let self = self else { return }
-            
             DispatchQueue.main.async {
                 switch result {
                 case .success:
-                    self.photos = self.imagesListService.photos
-                    cell.setIsLiked(self.photos[indexPath.row].isLiked)
+                    if let newIndexPath = self?.tableView.indexPath(for: cell),
+                       let newPhoto = self?.imagesListService.photos.first(where: { $0.id == photo.id }) {
+                        self?.photos[newIndexPath.row] = newPhoto
+                        cell.setIsLiked(newPhoto.isLiked)
+                    }
                 case .failure(let error):
-                    self.showLikeErrorAlert(error)
+                    self?.showLikeErrorAlert(error)
+                    cell.setIsLiked(photo.isLiked)
                 }
-                UIBlockingProgressHUD.dismiss()
             }
         }
-    }
-    
-    private func showLikeErrorAlert(_ error: Error) {
-        let alert = UIAlertController(
-            title: "Ошибка",
-            message: "Не удалось поставить лайк: \(error.localizedDescription)",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
     }
 }

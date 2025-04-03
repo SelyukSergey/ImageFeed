@@ -8,7 +8,7 @@ struct Photo {
     let welcomeDescription: String?
     let thumbImageURL: String
     let largeImageURL: String
-    let isLiked: Bool
+    var isLiked: Bool
     
     var isValidLargeURL: Bool {
         return !largeImageURL.isEmpty && URL(string: largeImageURL) != nil
@@ -46,6 +46,7 @@ struct PhotoResult: Decodable {
         case urls
     }
 }
+
 final class ImagesListService {
     static let shared = ImagesListService()
     static let didChangeNotification = Notification.Name(rawValue: "ImagesListServiceDidChange")
@@ -56,23 +57,56 @@ final class ImagesListService {
     private let perPage = 10
     private let dateFormatter = ISO8601DateFormatter()
     
+    func clean() {
+        photos.removeAll()
+        lastLoadedPage = nil
+        task?.cancel()
+        task = nil
+    }
+    
+    private func makeRequest(page: Int, perPage: Int) -> URLRequest? {
+        guard let token = OAuth2TokenStorage.shared.token else {
+            print("[ImagesListService]: Ошибка - отсутствует токен")
+            return nil
+        }
+        
+        var components = URLComponents(string: "https://api.unsplash.com/photos")
+        components?.queryItems = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "per_page", value: "\(perPage)")
+        ]
+        
+        guard let url = components?.url else {
+            print("[ImagesListService]: Ошибка - неверный URL")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+    
     func fetchPhotosNextPage() {
         guard task == nil else { return }
         
         let nextPage = (lastLoadedPage ?? 0) + 1
-        let request = makeRequest(page: nextPage, perPage: perPage)
+        guard let request = makeRequest(page: nextPage, perPage: perPage) else {
+            print("[ImagesListService]: Ошибка - не удалось создать запрос")
+            return
+        }
         
         let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
             defer { self.task = nil }
             
             if let error = error {
-                print("Error fetching photos: \(error)")
+                print("[ImagesListService]: Ошибка сети - \(error.localizedDescription)")
                 return
             }
             
             guard let data = data else {
-                print("No data received")
+                print("[ImagesListService]: Ошибка - отсутствуют данные")
                 return
             }
             
@@ -91,22 +125,15 @@ final class ImagesListService {
                 }
                 
                 DispatchQueue.main.async {
-                    var uniquePhotos = self.photos
-                    let existingIDs = Set(uniquePhotos.map { $0.id })
-                    let filteredNewPhotos = newPhotos.filter { !existingIDs.contains($0.id) }
-                    
-                    if !filteredNewPhotos.isEmpty {
-                        uniquePhotos.append(contentsOf: filteredNewPhotos)
-                        self.photos = uniquePhotos
-                        self.lastLoadedPage = nextPage
-                        NotificationCenter.default.post(
-                            name: ImagesListService.didChangeNotification,
-                            object: self
-                        )
-                    }
+                    self.photos.append(contentsOf: newPhotos)
+                    self.lastLoadedPage = nextPage
+                    NotificationCenter.default.post(
+                        name: ImagesListService.didChangeNotification,
+                        object: self
+                    )
                 }
             } catch {
-                print("Error decoding JSON: \(error)")
+                print("[ImagesListService]: Ошибка декодирования - \(error), Данные: \(String(data: data, encoding: .utf8) ?? "")")
             }
         }
         
@@ -115,14 +142,26 @@ final class ImagesListService {
     }
     
     func changeLike(photoId: String, isLike: Bool, _ completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let index = photos.firstIndex(where: { $0.id == photoId }) else {
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Фото не найдено"])))
+            return
+        }
+        
         let path = "/photos/\(photoId)/like"
         let httpMethod = isLike ? "POST" : "DELETE"
         
-        var request = URLRequest(url: Constants.defaultBaseURL.appendingPathComponent(path))
-        request.httpMethod = httpMethod
-        request.setValue("Client-ID \(Constants.accessKey)", forHTTPHeaderField: "Authorization")
+        guard let url = URL(string: "https://api.unsplash.com" + path) else {
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])))
+            return
+        }
         
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        var request = URLRequest(url: url)
+        request.httpMethod = httpMethod
+        if let token = OAuth2TokenStorage.shared.token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let task = URLSession.shared.dataTask(with: request) { [weak self] _, response, error in
             guard let self = self else { return }
             
             if let error = error {
@@ -136,73 +175,21 @@ final class ImagesListService {
                   (200...299).contains(httpResponse.statusCode) else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
                 DispatchQueue.main.async {
-                    completion(.failure(NetworkError.httpStatusCode(statusCode)))
+                    completion(.failure(NSError(domain: "", code: statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP ошибка: \(statusCode)"])))
                 }
                 return
             }
             
-            do {
-                guard let data = data else {
-                    DispatchQueue.main.async {
-                        completion(.failure(NetworkError.urlSessionError))
-                    }
-                    return
-                }
-                
-                let photoResult = try JSONDecoder().decode(PhotoResult.self, from: data)
-                DispatchQueue.main.async {
-                    self.updatePhotoLikeStatus(photoId: photoId, isLiked: photoResult.likedByUser)
-                    completion(.success(()))
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
+            DispatchQueue.main.async {
+                self.photos[index].isLiked = isLike
+                completion(.success(()))
+                NotificationCenter.default.post(
+                    name: ImagesListService.didChangeNotification,
+                    object: self
+                )
             }
         }
         
         task.resume()
-    }
-    
-    private func updatePhotoLikeStatus(photoId: String, isLiked: Bool) {
-        if let index = photos.firstIndex(where: { $0.id == photoId }) {
-            let photo = photos[index]
-            let newPhoto = Photo(
-                id: photo.id,
-                size: photo.size,
-                createdAt: photo.createdAt,
-                welcomeDescription: photo.welcomeDescription,
-                thumbImageURL: photo.thumbImageURL,
-                largeImageURL: photo.largeImageURL,
-                isLiked: isLiked
-            )
-            photos = photos.withReplaced(itemAt: index, newValue: newPhoto)
-            NotificationCenter.default.post(
-                name: ImagesListService.didChangeNotification,
-                object: self
-            )
-        }
-    }
-    
-    private func makeRequest(page: Int, perPage: Int) -> URLRequest {
-        var components = URLComponents(url: Constants.defaultBaseURL, resolvingAgainstBaseURL: true)!
-        components.path = "/photos"
-        components.queryItems = [
-            URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)")
-        ]
-        
-        var request = URLRequest(url: components.url!)
-        request.httpMethod = "GET"
-        request.setValue("Client-ID \(Constants.accessKey)", forHTTPHeaderField: "Authorization")
-        return request
-    }
-}
-
-extension Array {
-    func withReplaced(itemAt index: Int, newValue: Element) -> Array {
-        var newArray = self
-        newArray[index] = newValue
-        return newArray
     }
 }

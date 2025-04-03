@@ -1,9 +1,11 @@
 import Foundation
 
 enum NetworkError: Error {
+    case invalidRequest
     case httpStatusCode(Int)
-    case urlRequestError(Error)
     case urlSessionError
+    case urlRequestError(Error)
+    case decodingError(Error)
 }
 
 extension URLSession {
@@ -22,14 +24,14 @@ extension URLSession {
                 if 200 ..< 300 ~= statusCode {
                     fulfillCompletionOnTheMainThread(.success(data))
                 } else {
-                    print("[dataTask]: NetworkError - код ошибки \(statusCode)")
+                    print("[URLSession]: NetworkError - код ошибки \(statusCode)")
                     fulfillCompletionOnTheMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
                 }
             } else if let error = error {
-                print("[dataTask]: NetworkError - \(error.localizedDescription)")
+                print("[URLSession]: NetworkError - \(error.localizedDescription)")
                 fulfillCompletionOnTheMainThread(.failure(NetworkError.urlRequestError(error)))
             } else {
-                print("[dataTask]: NetworkError - неизвестная ошибка")
+                print("[URLSession]: NetworkError - неизвестная ошибка")
                 fulfillCompletionOnTheMainThread(.failure(NetworkError.urlSessionError))
             }
         })
@@ -51,7 +53,7 @@ extension URLSession {
                     let decodedObject = try decoder.decode(T.self, from: data)
                     completion(.success(decodedObject))
                 } catch {
-                    print("[objectTask]: Ошибка декодирования - \(error.localizedDescription), Данные: \(String(data: data, encoding: .utf8) ?? "")")
+                    print("[URLSession]: Ошибка декодирования - \(error.localizedDescription), Данные: \(String(data: data, encoding: .utf8) ?? "")")
                     completion(.failure(error))
                 }
             case .failure(let error):
@@ -61,4 +63,3 @@ extension URLSession {
         return task
     }
 }
-

@@ -6,15 +6,6 @@ final class SingleImageViewController: UIViewController {
     private var imageView: UIImageView!
     private var shareButton: UIButton!
     
-    private let loaderContainer: UIView = {
-        let view = UIView()
-        view.backgroundColor = .ypLightGray
-        view.layer.cornerRadius = 8
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.isHidden = true
-        return view
-    }()
-    
     var image: UIImage? {
         didSet {
             guard isViewLoaded else { return }
@@ -60,8 +51,6 @@ final class SingleImageViewController: UIViewController {
         shareButton.isHidden = true
         view.addSubview(shareButton)
         
-        view.addSubview(loaderContainer)
-        
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -74,11 +63,6 @@ final class SingleImageViewController: UIViewController {
             imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             imageView.heightAnchor.constraint(equalTo: scrollView.heightAnchor),
-            
-            loaderContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loaderContainer.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            loaderContainer.widthAnchor.constraint(equalToConstant: 51),
-            loaderContainer.heightAnchor.constraint(equalToConstant: 51),
             
             shareButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -17),
             shareButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -111,14 +95,15 @@ final class SingleImageViewController: UIViewController {
             return
         }
         
-        showLoader()
+        UIBlockingProgressHUD.animate()
         
         imageView.kf.setImage(
             with: url,
             options: [.transition(.fade(0.2))],
             completionHandler: { [weak self] result in
+                UIBlockingProgressHUD.dismiss()
+                
                 guard let self = self else { return }
-                self.hideLoader()
                 
                 switch result {
                 case .success(let imageResult):
@@ -130,25 +115,6 @@ final class SingleImageViewController: UIViewController {
                 self.updateShareButton()
             }
         )
-    }
-    
-    private func showLoader() {
-        loaderContainer.isHidden = false
-        let activityIndicator = UIActivityIndicatorView(style: .medium)
-        activityIndicator.color = .ypBlack
-        activityIndicator.startAnimating()
-        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-        loaderContainer.addSubview(activityIndicator)
-        
-        NSLayoutConstraint.activate([
-            activityIndicator.centerXAnchor.constraint(equalTo: loaderContainer.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: loaderContainer.centerYAnchor)
-        ])
-    }
-    
-    private func hideLoader() {
-        loaderContainer.isHidden = true
-        loaderContainer.subviews.forEach { $0.removeFromSuperview() }
     }
     
     private func updateImage(_ image: UIImage?) {
