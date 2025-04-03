@@ -26,6 +26,7 @@ final class ProfileService {
     // MARK: - Properties
     private(set) var profile: Profile?
     private var isFetching = false
+    private var task: URLSessionTask?
     
     func fetchProfile(_ token: String, completion: @escaping (Result<Profile, Error>) -> Void) {
         guard !isFetching else {
@@ -74,6 +75,15 @@ final class ProfileService {
             }
         }
         
+        self.task = task
         task.resume()
+    }
+    
+    // MARK: - Reset Method
+    func reset() {
+        profile = nil
+        task?.cancel()
+        task = nil
+        isFetching = false
     }
 }
