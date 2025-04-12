@@ -31,7 +31,8 @@ final class ProfileLogoutService {
     private func switchToSplashViewController() {
         DispatchQueue.main.async {
             guard let window = UIApplication.shared.windows.first else {
-                fatalError("Invalid Configuration")
+                assertionFailure("Invalid Configuration: window not found")
+                return
             }
             
             let splashViewController = SplashViewController()

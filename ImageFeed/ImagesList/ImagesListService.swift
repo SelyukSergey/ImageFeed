@@ -1,51 +1,4 @@
 import Foundation
-import UIKit
-
-struct Photo {
-    let id: String
-    let size: CGSize
-    let createdAt: Date?
-    let welcomeDescription: String?
-    let thumbImageURL: String
-    let largeImageURL: String
-    var isLiked: Bool
-    
-    var isValidLargeURL: Bool {
-        return !largeImageURL.isEmpty && URL(string: largeImageURL) != nil
-    }
-    
-    var isValidThumbURL: Bool {
-        return !thumbImageURL.isEmpty && URL(string: thumbImageURL) != nil
-    }
-}
-
-struct UrlsResult: Decodable {
-    let raw: String
-    let full: String
-    let regular: String
-    let small: String
-    let thumb: String
-}
-
-struct PhotoResult: Decodable {
-    let id: String
-    let createdAt: String
-    let width: Int
-    let height: Int
-    let description: String?
-    let likedByUser: Bool
-    let urls: UrlsResult
-    
-    enum CodingKeys: String, CodingKey {
-        case id
-        case createdAt = "created_at"
-        case width
-        case height
-        case description
-        case likedByUser = "liked_by_user"
-        case urls
-    }
-}
 
 final class ImagesListService {
     static let shared = ImagesListService()
@@ -57,34 +10,22 @@ final class ImagesListService {
     private let perPage = 10
     private let dateFormatter = ISO8601DateFormatter()
     
+    // MARK: - HTTP Methods
+    private enum HTTPMethod: String {
+        case get = "GET"
+        case post = "POST"
+        case put = "PUT"
+        case patch = "PATCH"
+        case delete = "DELETE"
+    }
+    
+    // MARK: - Public Interface
+    
     func clean() {
         photos.removeAll()
         lastLoadedPage = nil
         task?.cancel()
         task = nil
-    }
-    
-    private func makeRequest(page: Int, perPage: Int) -> URLRequest? {
-        guard let token = OAuth2TokenStorage.shared.token else {
-            print("[ImagesListService]: Ошибка - отсутствует токен")
-            return nil
-        }
-        
-        var components = URLComponents(string: "https://api.unsplash.com/photos")
-        components?.queryItems = [
-            URLQueryItem(name: "page", value: "\(page)"),
-            URLQueryItem(name: "per_page", value: "\(perPage)")
-        ]
-        
-        guard let url = components?.url else {
-            print("[ImagesListService]: Ошибка - неверный URL")
-            return nil
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        return request
     }
     
     func fetchPhotosNextPage() {
@@ -148,7 +89,7 @@ final class ImagesListService {
         }
         
         let path = "/photos/\(photoId)/like"
-        let httpMethod = isLike ? "POST" : "DELETE"
+        let httpMethod = isLike ? HTTPMethod.post : HTTPMethod.delete
         
         guard let url = URL(string: "https://api.unsplash.com" + path) else {
             completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])))
@@ -156,7 +97,7 @@ final class ImagesListService {
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = httpMethod
+        request.httpMethod = httpMethod.rawValue
         if let token = OAuth2TokenStorage.shared.token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -191,5 +132,30 @@ final class ImagesListService {
         }
         
         task.resume()
+    }
+    
+    // MARK: - Private Helpers
+    
+    private func makeRequest(page: Int, perPage: Int) -> URLRequest? {
+        guard let token = OAuth2TokenStorage.shared.token else {
+            print("[ImagesListService]: Ошибка - отсутствует токен")
+            return nil
+        }
+        
+        var components = URLComponents(string: "https://api.unsplash.com/photos")
+        components?.queryItems = [
+            URLQueryItem(name: "page", value: "\(page)"),
+            URLQueryItem(name: "per_page", value: "\(perPage)")
+        ]
+        
+        guard let url = components?.url else {
+            print("[ImagesListService]: Ошибка - неверный URL")
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.get.rawValue
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return request
     }
 }
