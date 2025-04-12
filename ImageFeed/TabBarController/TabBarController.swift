@@ -20,17 +20,14 @@ final class TabBarController: UITabBarController {
         )
         
         self.viewControllers = [imagesListNavigationController, profileViewController]
-        
         setupTabBarAppearance()
     }
     
     private func setupTabBarAppearance() {
         tabBar.barTintColor = UIColor(named: "YP Black")
         tabBar.isTranslucent = false
-        
         tabBar.tintColor = .white
         tabBar.unselectedItemTintColor = UIColor(named: "YP Gray")
-        
         view.backgroundColor = UIColor(named: "YP Black")
     }
 }
