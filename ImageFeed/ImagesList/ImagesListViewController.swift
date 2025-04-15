@@ -10,7 +10,7 @@ final class ImagesListViewController: UIViewController, ImagesListViewController
         return tableView
     }()
     
-    private var presenter: ImagesListPresenterProtocol = ImagesListPresenter()
+    var presenter: ImagesListPresenterProtocol = ImagesListPresenter()
     
     override func viewDidLoad() {
         super.viewDidLoad()
