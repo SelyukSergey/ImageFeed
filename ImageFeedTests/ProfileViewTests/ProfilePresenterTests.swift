@@ -117,7 +117,7 @@ final class ProfilePresenterTests: XCTestCase {
         }
         
         // When
-        presenter.viewDidLoad() // Setup observer first
+        presenter.viewDidLoad() 
         NotificationCenter.default.post(
             name: ProfileImageService.didChangeNotification,
             object: nil,
