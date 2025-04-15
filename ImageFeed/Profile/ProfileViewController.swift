@@ -3,7 +3,7 @@ import Kingfisher
 
 final class ProfileViewController: UIViewController, ProfileViewControllerProtocol {
     // MARK: - UI Elements
-    private let nameLabel: UILabel = {
+    let nameLabel: UILabel = {
         let label = UILabel()
         label.text = "Екатерина Новикова"
         label.font = UIFont.systemFont(ofSize: 23, weight: .semibold)
@@ -11,7 +11,7 @@ final class ProfileViewController: UIViewController, ProfileViewControllerProtoc
         return label
     }()
     
-    private let loginNameLabel: UILabel = {
+    let loginNameLabel: UILabel = {
         let label = UILabel()
         label.text = "@ekaterina_nov"
         label.font = .systemFont(ofSize: 13)
@@ -19,7 +19,7 @@ final class ProfileViewController: UIViewController, ProfileViewControllerProtoc
         return label
     }()
     
-    private let descriptionLabel: UILabel = {
+    let descriptionLabel: UILabel = {
         let label = UILabel()
         label.text = "Hello, World!"
         label.font = .systemFont(ofSize: 13)
@@ -27,7 +27,7 @@ final class ProfileViewController: UIViewController, ProfileViewControllerProtoc
         return label
     }()
     
-    private let imageView: UIImageView = {
+    let imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.layer.cornerRadius = 35
         imageView.clipsToBounds = true
@@ -35,7 +35,7 @@ final class ProfileViewController: UIViewController, ProfileViewControllerProtoc
         return imageView
     }()
     
-    private lazy var logoutButton: UIButton = {
+    lazy var logoutButton: UIButton = {
         let button = UIButton(type: .system)
         button.setImage(UIImage(named: "logout_button"), for: .normal)
         button.tintColor = .ypRed
@@ -126,5 +126,17 @@ final class ProfileViewController: UIViewController, ProfileViewControllerProtoc
         alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
         
         present(alert, animated: true)
+    }
+}
+
+extension ProfileViewController {
+    func testableViews() -> (
+        imageView: UIImageView,
+        nameLabel: UILabel,
+        loginNameLabel: UILabel,
+        descriptionLabel: UILabel,
+        logoutButton: UIButton
+    ) {
+        return (imageView, nameLabel, loginNameLabel, descriptionLabel, logoutButton)
     }
 }

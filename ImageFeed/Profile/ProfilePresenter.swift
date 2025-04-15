@@ -71,11 +71,7 @@ final class ProfilePresenter: ProfilePresenterProtocol {
             queue: .main
         ) { [weak self] notification in
             guard let self = self else { return }
-            
-            if let userInfo = notification.userInfo,
-               let _ = userInfo["URL"] as? String {
-                self.updateAvatar()
-            }
+            self.updateAvatar()
         }
     }
 }
