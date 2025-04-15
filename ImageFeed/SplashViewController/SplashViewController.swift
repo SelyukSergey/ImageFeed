@@ -113,26 +113,30 @@ final class SplashViewController: UIViewController {
 // MARK: - AuthViewControllerDelegate
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didAuthenticateWithCode code: String) {
-        dismiss(animated: true)
+        dismiss(animated: true) { [weak self] in
+            self?.fetchOAuthToken(code)
+        }
     }
     
     private func fetchOAuthToken(_ code: String) {
+        UIBlockingProgressHUD.animate()
+        
         oauth2Service.fetchOAuthToken(code) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success(let token):
+            DispatchQueue.main.async {
+                UIBlockingProgressHUD.dismiss()
                 
-                self.oauth2TokenStorage.token = token
+                guard let self = self else { return }
                 
-                self.fetchProfile(token)
-                
-            case .failure(let error):
-                print("Failed to fetch OAuth token: \(error)")
-                
-                self.showErrorAlert(message: "Не удалось войти. Пожалуйста, попробуйте снова.")
+                switch result {
+                case .success(let token):
+                    self.oauth2TokenStorage.token = token
+                    self.fetchProfile(token)  
+                    
+                case .failure(let error):
+                    self.showErrorAlert(message: "Не удалось войти: \(error.localizedDescription)")
+                }
             }
         }
     }
 }
-
 

@@ -7,6 +7,7 @@ final class ImagesListViewController: UIViewController, ImagesListViewController
         tableView.separatorStyle = .none
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
+        tableView.accessibilityIdentifier = "tableView"
         return tableView
     }()
     
@@ -112,6 +113,10 @@ extension ImagesListViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        if ProcessInfo.processInfo.arguments.contains("UITEST") {
+            return
+        }
+        
         if indexPath.row == presenter.photosCount - 1 {
             presenter.fetchPhotosNextPageIfNeeded()
         }

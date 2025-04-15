@@ -25,6 +25,7 @@ final class WebViewViewController: UIViewController, WKUIDelegate, WebViewViewCo
         let webView = WKWebView()
         webView.backgroundColor = .ypWhite
         webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.accessibilityIdentifier = AccessibilityIds.webWiew
         return webView
     }()
     
@@ -43,6 +44,7 @@ final class WebViewViewController: UIViewController, WKUIDelegate, WebViewViewCo
         super.viewDidLoad()
         view.backgroundColor = .ypWhite
         setupViews()
+        presenter?.viewDidLoad()
         setupNavigationBar()
         
         webView.navigationDelegate = self
@@ -54,8 +56,6 @@ final class WebViewViewController: UIViewController, WKUIDelegate, WebViewViewCo
             guard let self = self else { return }
             self.presenter?.didUpdateProgressValue(change.newValue ?? 0)
         }
-        
-        presenter?.viewDidLoad()
     }
     
     // MARK: - Override properties
