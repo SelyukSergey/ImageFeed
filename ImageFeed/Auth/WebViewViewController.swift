@@ -6,11 +6,16 @@ protocol WebViewViewControllerDelegate: AnyObject {
     func webViewViewControllerDidCancel(_ vc: WebViewViewController)
 }
 
-final class WebViewViewController: UIViewController, WKUIDelegate {
-    //MARK: - Enum
-    enum WebViewConstants {
-        static let unsplashAuthorizeURLString = "https://unsplash.com/oauth/authorize"
-    }
+public protocol WebViewViewControllerProtocol: AnyObject {
+    var presenter: WebViewPresenterProtocol? { get set }
+    func load(request: URLRequest)
+    func setProgressValue(_ newValue: Float)
+    func setProgressHidden(_ isHidden: Bool)
+}
+
+final class WebViewViewController: UIViewController, WKUIDelegate, WebViewViewControllerProtocol {
+    
+    var presenter: WebViewPresenterProtocol?
     
     //MARK: - Delegate
     weak var delegate: WebViewViewControllerDelegate?
@@ -26,7 +31,7 @@ final class WebViewViewController: UIViewController, WKUIDelegate {
     private lazy var progressView: UIProgressView = {
         let progressView = UIProgressView()
         progressView.progressTintColor = .ypBlack
-        progressView.progress = 0.5
+        progressView.progress = 0.0
         progressView.translatesAutoresizingMaskIntoConstraints = false
         return progressView
     }()
@@ -37,24 +42,20 @@ final class WebViewViewController: UIViewController, WKUIDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .ypWhite
-        configureWebView()
-        loadAuthView()
-        configureProgressView()
-        
-        let backButtonImage = UIImage(named: "nav_back_button")?.withRenderingMode(.alwaysOriginal)
-        let backButton = UIBarButtonItem(
-            image: backButtonImage,
-            style: .plain,
-            target: self,
-            action: #selector(didTapBackButton)
-        )
-        navigationItem.leftBarButtonItem = backButton
+        setupViews()
+        setupNavigationBar()
         
         webView.navigationDelegate = self
         
-        progressObservation = webView.observe(\.estimatedProgress, options: .new) { [weak self] _, _ in
-            self?.updateProgress()
+        progressObservation = webView.observe(
+            \.estimatedProgress,
+             options: .new
+        ) { [weak self] _, change in
+            guard let self = self else { return }
+            self.presenter?.didUpdateProgressValue(change.newValue ?? 0)
         }
+        
+        presenter?.viewDidLoad()
     }
     
     // MARK: - Override properties
@@ -67,46 +68,45 @@ final class WebViewViewController: UIViewController, WKUIDelegate {
         progressObservation?.invalidate()
     }
     
+    // MARK: - WebViewViewControllerProtocol
+    func load(request: URLRequest) {
+        webView.load(request)
+    }
+    
+    func setProgressValue(_ newValue: Float) {
+        progressView.progress = newValue
+    }
+    
+    func setProgressHidden(_ isHidden: Bool) {
+        progressView.isHidden = isHidden
+    }
+    
     // MARK: - Private methods
-    private func configureWebView() {
+    private func setupViews() {
         view.addSubview(webView)
+        view.addSubview(progressView)
         
         NSLayoutConstraint.activate([
             webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-    }
-    
-    private func configureProgressView() {
-        view.addSubview(progressView)
-        
-        NSLayoutConstraint.activate([
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
             progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             progressView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             progressView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
         ])
     }
     
-    private func loadAuthView() {
-        guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizeURLString) else { return }
-        
-        urlComponents.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
-            URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: Constants.accessScope)
-        ]
-        guard let url = urlComponents.url else { return }
-        
-        let request = URLRequest(url: url)
-        webView.load(request)
-    }
-    
-    private func updateProgress() {
-        progressView.progress = Float(webView.estimatedProgress)
-        progressView.isHidden = abs(webView.estimatedProgress - 1.0) <= 0.0001
+    private func setupNavigationBar() {
+        let backButtonImage = UIImage(named: "nav_back_button")?.withRenderingMode(.alwaysOriginal)
+        let backButton = UIBarButtonItem(
+            image: backButtonImage,
+            style: .plain,
+            target: self,
+            action: #selector(didTapBackButton)
+        )
+        navigationItem.leftBarButtonItem = backButton
     }
     
     @objc private func didTapBackButton() {
@@ -114,43 +114,19 @@ final class WebViewViewController: UIViewController, WKUIDelegate {
     }
 }
 
-//MARK: - Extension
+// MARK: - WKNavigationDelegate
 extension WebViewViewController: WKNavigationDelegate {
-    
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        if let code = code(from: navigationAction) {
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        if let url = navigationAction.request.url,
+           let code = presenter?.code(from: url) {
             delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             decisionHandler(.cancel)
         } else {
             decisionHandler(.allow)
         }
     }
-    
-    private func code(from navigationAction: WKNavigationAction) -> String? {
-        if
-            let url = navigationAction.request.url,
-            let urlComponents = URLComponents(string: url.absoluteString),
-            urlComponents.path == "/oauth/authorize/native",
-            let items = urlComponents.queryItems,
-            let codeItem = items.first(where: { $0.name == "code" })
-        {
-            return codeItem.value
-        } else {
-            return nil
-        }
-    }
-    
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        progressView.isHidden = true
-    }
-    
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        progressView.isHidden = true
-    }
-    
-    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        progressView.isHidden = false
-    }
 }
-
-
