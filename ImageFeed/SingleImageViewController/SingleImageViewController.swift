@@ -86,6 +86,7 @@ final class SingleImageViewController: UIViewController {
             target: self,
             action: #selector(didTapBackButton)
         )
+        backButton.accessibilityIdentifier = AccessibilityIds.backButton
         navigationItem.leftBarButtonItem = backButton
         navigationController?.interactivePopGestureRecognizer?.delegate = self
     }

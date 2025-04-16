@@ -14,7 +14,7 @@ struct UserResult: Codable {
     }
 }
 
-final class ProfileImageService {
+final class ProfileImageService: ProfileImageServiceProtocol {
     // MARK: - Singleton
     static let shared = ProfileImageService()
     private var isFetching = false

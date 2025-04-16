@@ -23,6 +23,7 @@ final class ImagesListCell: UITableViewCell {
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(nil, action: #selector(likeButtonClicked), for: .touchUpInside)
+        button.accessibilityIdentifier = AccessibilityIds.likeButton
         return button
     }()
     
@@ -52,7 +53,7 @@ final class ImagesListCell: UITableViewCell {
     }
     
     func configure(with photo: Photo, using dateFormatter: DateFormatter) {
-        dateLabel.text = photo.createdAt.map { dateFormatter.string(from: $0) } ?? ""
+        dateLabel.text = photo.createAt.map { dateFormatter.string(from: $0) } ?? ""
         setIsLiked(photo.isLiked)
         
         if let url = URL(string: photo.thumbImageURL) {

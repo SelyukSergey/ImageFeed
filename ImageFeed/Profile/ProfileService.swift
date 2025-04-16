@@ -17,7 +17,7 @@ struct Profile {
 }
 
 // MARK: - ProfileService
-final class ProfileService {
+final class ProfileService: ProfileServiceProtocol {
     // MARK: - Singleton
     static let shared = ProfileService()
     

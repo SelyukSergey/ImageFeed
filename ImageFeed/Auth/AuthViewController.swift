@@ -29,12 +29,15 @@ final class AuthViewController: UIViewController {
         button.clipsToBounds = true
         button.translatesAutoresizingMaskIntoConstraints = false
         button.addTarget(self, action: #selector(didTapLoginButton), for: .touchUpInside)
+        button.accessibilityIdentifier = AccessibilityIds.loginButton
         return button
     }()
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        view.accessibilityIdentifier = AccessibilityIds.authViewController
         setupUI()
     }
     
@@ -61,14 +64,22 @@ final class AuthViewController: UIViewController {
         ])
     }
     
-    @objc private func didTapLoginButton() {
-        let webViewViewController = WebViewViewController()
-        webViewViewController.delegate = self
-        let navigationController = UINavigationController(rootViewController: webViewViewController)
-        navigationController.modalPresentationStyle = .fullScreen
-        present(navigationController, animated: true, completion: nil)
+    //MARK: - Actions
+        @objc private func didTapLoginButton() {
+            let webViewViewController = WebViewViewController()
+            let authHelper = AuthHelper()
+            let webViewPresenter = WebViewPresenter(authHelper: authHelper)
+            
+            webViewViewController.presenter = webViewPresenter
+            webViewPresenter.view = webViewViewController
+            
+            webViewViewController.delegate = self
+            
+            let navigationController = UINavigationController(rootViewController: webViewViewController)
+            navigationController.modalPresentationStyle = .fullScreen
+            present(navigationController, animated: true, completion: nil)
+        }
     }
-}
 
 // MARK: - WebViewViewControllerDelegate
 extension AuthViewController: WebViewViewControllerDelegate {
