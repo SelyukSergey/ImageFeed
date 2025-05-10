@@ -1,21 +1,32 @@
 import Foundation
 import UIKit
 
+import Foundation
+
 struct Photo {
     let id: String
     let size: CGSize
-    let createdAt: Date?
+    let createAt: Date?
     let welcomeDescription: String?
     let thumbImageURL: String
     let largeImageURL: String
     var isLiked: Bool
-    
     var isValidLargeURL: Bool {
-        return !largeImageURL.isEmpty && URL(string: largeImageURL) != nil
+        !largeImageURL.isEmpty && URL(string: largeImageURL) != nil
+    }
+    var isValidThumbImageURL: Bool {
+        !thumbImageURL.isEmpty && URL(string: thumbImageURL) != nil
     }
     
-    var isValidThumbURL: Bool {
-        return !thumbImageURL.isEmpty && URL(string: thumbImageURL) != nil
+    init(from photoResult: PhotoResult) {
+        self.id = photoResult.id
+        self.size = CGSize(width: photoResult.width, height: photoResult.height)
+        let dateFormatter = ISO8601DateFormatter()
+        self.createAt = dateFormatter.date(from: photoResult.createdAt)
+        self.welcomeDescription = photoResult.description
+        self.thumbImageURL = photoResult.urls.thumb
+        self.largeImageURL = photoResult.urls.full
+        self.isLiked = photoResult.likedByUser
     }
 }
 
@@ -112,17 +123,7 @@ final class ImagesListService {
             
             do {
                 let photoResults = try JSONDecoder().decode([PhotoResult].self, from: data)
-                let newPhotos = photoResults.map { photoResult in
-                    Photo(
-                        id: photoResult.id,
-                        size: CGSize(width: photoResult.width, height: photoResult.height),
-                        createdAt: self.dateFormatter.date(from: photoResult.createdAt),
-                        welcomeDescription: photoResult.description,
-                        thumbImageURL: photoResult.urls.thumb,
-                        largeImageURL: photoResult.urls.full,
-                        isLiked: photoResult.likedByUser
-                    )
-                }
+                let newPhotos = photoResults.map { Photo(from: $0) }
                 
                 DispatchQueue.main.async {
                     self.photos.append(contentsOf: newPhotos)
